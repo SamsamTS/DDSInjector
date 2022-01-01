@@ -5,6 +5,7 @@ using System.IO;
 namespace DDSInjector
 {
     using Properties;
+
     public partial class MainForm : Form
     {
         public MainForm()
@@ -28,7 +29,6 @@ namespace DDSInjector
             ddsFileTextBox.Text      = Settings.Default.ddsPath;
             rootFolderTextBox.Text   = Settings.Default.rootPath;
             exportFolderTextBox.Text = Settings.Default.exportPath;
-
         }
 
         private struct DDSHeader
@@ -191,12 +191,6 @@ namespace DDSInjector
                 return;
             }
 
-            /*if(ddsHeader.dwHeight != ddsHeader.dwWidth)
-            {
-                statusLabel.Text = "❌Non square texture not supported";
-                return;
-            }*/
-
             int ubulkSize = ddsHeader.dwPitchOrLinearSize + ddsHeader.dwPitchOrLinearSize / 4;
             string ddsFilename = Path.GetFileNameWithoutExtension(Settings.Default.ddsPath);
 
@@ -235,7 +229,10 @@ namespace DDSInjector
                 else
                 {
                     injectButton.Enabled = true;
-                    injectButton.Focus();
+                    if (ActiveControl is not TextBox)
+                    {
+                        injectButton.Focus();
+                    }
                 }
             }
             catch (Exception ex)
@@ -248,6 +245,7 @@ namespace DDSInjector
         private void ddsFileButton_Click(object sender, EventArgs e)
         {
             openFileDialog.FileName = Settings.Default.ddsPath;
+            openFileDialog.InitialDirectory = Path.GetDirectoryName(Settings.Default.ddsPath);
 
             DialogResult result = openFileDialog.ShowDialog();
 
@@ -272,7 +270,14 @@ namespace DDSInjector
 
         private void exportFolderButton_Click(object sender, EventArgs e)
         {
-            exportFolderBrowser.SelectedPath = Settings.Default.exportPath;
+            if (string.IsNullOrEmpty(Settings.Default.exportPath))
+            {
+                exportFolderBrowser.SelectedPath = Path.GetDirectoryName(Settings.Default.rootPath) + Path.DirectorySeparatorChar;
+            }
+            else
+            {
+                exportFolderBrowser.SelectedPath = Settings.Default.exportPath;
+            }
             DialogResult result = exportFolderBrowser.ShowDialog();
 
             if (result == DialogResult.OK)
@@ -283,6 +288,7 @@ namespace DDSInjector
 
         private void MainForm_Shown(object sender, EventArgs e)
         {
+            ddsFileButton.Focus();
             UpdateStatus();
         }
 
@@ -392,23 +398,10 @@ namespace DDSInjector
                     {
                         // Inject 4a and 4b
                         writer.Write(reader.ReadBytes(bytesToInject + bytesToInject));
-                        n -= 2;
+                        break;
                     }
                 }
 
-                /*int count = 0;
-                for (int size = ddsHeader.dwHeight / 4; size >= 4; size /= 2)
-                {
-                    bytesToInject /= 4;
-                    writer.Write(reader.ReadBytes(bytesToInject));
-
-                    if(size == 4)
-                    {
-                        // Inject 4a and 4b
-                        writer.Write(reader.ReadBytes(bytesToInject + bytesToInject));
-                    }
-                    count++;
-                }*/
                 writer.Close();
                 reader.Close();
 
@@ -445,8 +438,15 @@ namespace DDSInjector
 
         private void ddsFileTextBox_TextChanged(object sender, EventArgs e)
         {
-            Settings.Default.ddsPath = ddsFileTextBox.Text;
-            Settings.Default.Save();
+            if (Path.GetExtension(ddsFileTextBox.Text) == ".dds")
+            {
+                Settings.Default.ddsPath = ddsFileTextBox.Text;
+                Settings.Default.Save();
+            }
+            else
+            {
+                Settings.Default.ddsPath = "";
+            }
             UpdateStatus();
         }
 
