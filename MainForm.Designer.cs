@@ -29,10 +29,6 @@ namespace DDSInjector
         /// </summary>
         private void InitializeComponent()
         {
-            this.label1 = new System.Windows.Forms.Label();
-            this.ddsFileButton = new System.Windows.Forms.Button();
-            this.panel1 = new System.Windows.Forms.Panel();
-            this.ddsFileTextBox = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
             this.panel2 = new System.Windows.Forms.Panel();
             this.rootFolderTextBox = new System.Windows.Forms.TextBox();
@@ -41,7 +37,6 @@ namespace DDSInjector
             this.exportFolderTextBox = new System.Windows.Forms.TextBox();
             this.exportFolderButton = new System.Windows.Forms.Button();
             this.label3 = new System.Windows.Forms.Label();
-            this.label4 = new System.Windows.Forms.Label();
             this.rootFolderBrowser = new System.Windows.Forms.FolderBrowserDialog();
             this.exportFolderBrowser = new System.Windows.Forms.FolderBrowserDialog();
             this.openFileDialog = new System.Windows.Forms.OpenFileDialog();
@@ -49,63 +44,26 @@ namespace DDSInjector
             this.injectButton = new System.Windows.Forms.Button();
             this.panel5 = new System.Windows.Forms.Panel();
             this.panel7 = new System.Windows.Forms.Panel();
+            this.ddsPanel = new System.Windows.Forms.Panel();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.ddsFileTextBox = new System.Windows.Forms.TextBox();
+            this.ddsFileButton = new System.Windows.Forms.Button();
+            this.label1 = new System.Windows.Forms.Label();
+            this.assetsPanel = new System.Windows.Forms.Panel();
             this.dataGridView = new System.Windows.Forms.DataGridView();
             this.assetName = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.assetFormat = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.assetPath = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.hideFormats = new System.Windows.Forms.CheckBox();
-            this.panel1.SuspendLayout();
+            this.label4 = new System.Windows.Forms.Label();
             this.panel2.SuspendLayout();
             this.panel3.SuspendLayout();
             this.panel5.SuspendLayout();
+            this.ddsPanel.SuspendLayout();
+            this.panel1.SuspendLayout();
+            this.assetsPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView)).BeginInit();
             this.SuspendLayout();
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Dock = System.Windows.Forms.DockStyle.Top;
-            this.label1.Location = new System.Drawing.Point(10, 10);
-            this.label1.Name = "label1";
-            this.label1.Padding = new System.Windows.Forms.Padding(0, 0, 0, 3);
-            this.label1.Size = new System.Drawing.Size(75, 18);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "DDS to inject";
-            // 
-            // ddsFileButton
-            // 
-            this.ddsFileButton.AutoSize = true;
-            this.ddsFileButton.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.ddsFileButton.Dock = System.Windows.Forms.DockStyle.Right;
-            this.ddsFileButton.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.ddsFileButton.Location = new System.Drawing.Point(542, 0);
-            this.ddsFileButton.Name = "ddsFileButton";
-            this.ddsFileButton.Size = new System.Drawing.Size(52, 23);
-            this.ddsFileButton.TabIndex = 2;
-            this.ddsFileButton.Text = "Select";
-            this.ddsFileButton.UseVisualStyleBackColor = true;
-            this.ddsFileButton.Click += new System.EventHandler(this.ddsFileButton_Click);
-            // 
-            // panel1
-            // 
-            this.panel1.AutoSize = true;
-            this.panel1.Controls.Add(this.ddsFileTextBox);
-            this.panel1.Controls.Add(this.ddsFileButton);
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel1.Location = new System.Drawing.Point(10, 28);
-            this.panel1.MinimumSize = new System.Drawing.Size(0, 23);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(594, 23);
-            this.panel1.TabIndex = 2;
-            // 
-            // ddsFileTextBox
-            // 
-            this.ddsFileTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ddsFileTextBox.Location = new System.Drawing.Point(0, 0);
-            this.ddsFileTextBox.Name = "ddsFileTextBox";
-            this.ddsFileTextBox.Size = new System.Drawing.Size(542, 23);
-            this.ddsFileTextBox.TabIndex = 1;
-            this.ddsFileTextBox.TextChanged += new System.EventHandler(this.ddsFileTextBox_TextChanged);
             // 
             // label2
             // 
@@ -199,17 +157,6 @@ namespace DDSInjector
             this.label3.TabIndex = 5;
             this.label3.Text = "Export folder";
             // 
-            // label4
-            // 
-            this.label4.AutoSize = true;
-            this.label4.Dock = System.Windows.Forms.DockStyle.Top;
-            this.label4.Location = new System.Drawing.Point(10, 153);
-            this.label4.Name = "label4";
-            this.label4.Padding = new System.Windows.Forms.Padding(0, 10, 0, 3);
-            this.label4.Size = new System.Drawing.Size(138, 28);
-            this.label4.TabIndex = 7;
-            this.label4.Text = "Compatible assets found";
-            // 
             // rootFolderBrowser
             // 
             this.rootFolderBrowser.Description = "Select the root folder where the original assets are saved";
@@ -269,6 +216,72 @@ namespace DDSInjector
             this.panel7.Size = new System.Drawing.Size(594, 0);
             this.panel7.TabIndex = 10;
             // 
+            // ddsPanel
+            // 
+            this.ddsPanel.AutoSize = true;
+            this.ddsPanel.Controls.Add(this.panel1);
+            this.ddsPanel.Controls.Add(this.label1);
+            this.ddsPanel.Dock = System.Windows.Forms.DockStyle.Top;
+            this.ddsPanel.Location = new System.Drawing.Point(10, 10);
+            this.ddsPanel.Name = "ddsPanel";
+            this.ddsPanel.Size = new System.Drawing.Size(594, 41);
+            this.ddsPanel.TabIndex = 17;
+            // 
+            // panel1
+            // 
+            this.panel1.AutoSize = true;
+            this.panel1.Controls.Add(this.ddsFileTextBox);
+            this.panel1.Controls.Add(this.ddsFileButton);
+            this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panel1.Location = new System.Drawing.Point(0, 18);
+            this.panel1.MinimumSize = new System.Drawing.Size(0, 23);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(594, 23);
+            this.panel1.TabIndex = 4;
+            // 
+            // ddsFileTextBox
+            // 
+            this.ddsFileTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.ddsFileTextBox.Location = new System.Drawing.Point(0, 0);
+            this.ddsFileTextBox.Name = "ddsFileTextBox";
+            this.ddsFileTextBox.Size = new System.Drawing.Size(542, 23);
+            this.ddsFileTextBox.TabIndex = 1;
+            // 
+            // ddsFileButton
+            // 
+            this.ddsFileButton.AutoSize = true;
+            this.ddsFileButton.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.ddsFileButton.Dock = System.Windows.Forms.DockStyle.Right;
+            this.ddsFileButton.FlatStyle = System.Windows.Forms.FlatStyle.System;
+            this.ddsFileButton.Location = new System.Drawing.Point(542, 0);
+            this.ddsFileButton.Name = "ddsFileButton";
+            this.ddsFileButton.Size = new System.Drawing.Size(52, 23);
+            this.ddsFileButton.TabIndex = 2;
+            this.ddsFileButton.Text = "Select";
+            this.ddsFileButton.UseVisualStyleBackColor = true;
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Dock = System.Windows.Forms.DockStyle.Top;
+            this.label1.Location = new System.Drawing.Point(0, 0);
+            this.label1.Name = "label1";
+            this.label1.Padding = new System.Windows.Forms.Padding(0, 0, 0, 3);
+            this.label1.Size = new System.Drawing.Size(75, 18);
+            this.label1.TabIndex = 3;
+            this.label1.Text = "DDS to inject";
+            // 
+            // assetsPanel
+            // 
+            this.assetsPanel.Controls.Add(this.dataGridView);
+            this.assetsPanel.Controls.Add(this.hideFormats);
+            this.assetsPanel.Controls.Add(this.label4);
+            this.assetsPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.assetsPanel.Location = new System.Drawing.Point(10, 153);
+            this.assetsPanel.Name = "assetsPanel";
+            this.assetsPanel.Size = new System.Drawing.Size(594, 258);
+            this.assetsPanel.TabIndex = 18;
+            // 
             // dataGridView
             // 
             this.dataGridView.AllowUserToAddRows = false;
@@ -281,7 +294,7 @@ namespace DDSInjector
             this.assetPath});
             this.dataGridView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dataGridView.EditMode = System.Windows.Forms.DataGridViewEditMode.EditProgrammatically;
-            this.dataGridView.Location = new System.Drawing.Point(10, 181);
+            this.dataGridView.Location = new System.Drawing.Point(0, 28);
             this.dataGridView.MultiSelect = false;
             this.dataGridView.Name = "dataGridView";
             this.dataGridView.ReadOnly = true;
@@ -289,8 +302,7 @@ namespace DDSInjector
             this.dataGridView.RowTemplate.Height = 25;
             this.dataGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.dataGridView.Size = new System.Drawing.Size(594, 211);
-            this.dataGridView.TabIndex = 14;
-            this.dataGridView.SelectionChanged += new System.EventHandler(this.dataGridView_SelectionChanged);
+            this.dataGridView.TabIndex = 18;
             // 
             // assetName
             // 
@@ -319,43 +331,54 @@ namespace DDSInjector
             this.hideFormats.Checked = true;
             this.hideFormats.CheckState = System.Windows.Forms.CheckState.Checked;
             this.hideFormats.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.hideFormats.Location = new System.Drawing.Point(10, 392);
+            this.hideFormats.Location = new System.Drawing.Point(0, 239);
             this.hideFormats.Name = "hideFormats";
             this.hideFormats.Size = new System.Drawing.Size(594, 19);
-            this.hideFormats.TabIndex = 16;
+            this.hideFormats.TabIndex = 19;
             this.hideFormats.Text = "Hide incompatible formats";
             this.hideFormats.UseVisualStyleBackColor = true;
-            this.hideFormats.CheckedChanged += new System.EventHandler(this.hideFormats_CheckedChanged);
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Dock = System.Windows.Forms.DockStyle.Top;
+            this.label4.Location = new System.Drawing.Point(0, 0);
+            this.label4.Name = "label4";
+            this.label4.Padding = new System.Windows.Forms.Padding(0, 10, 0, 3);
+            this.label4.Size = new System.Drawing.Size(138, 28);
+            this.label4.TabIndex = 17;
+            this.label4.Text = "Compatible assets found";
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(614, 456);
-            this.Controls.Add(this.dataGridView);
-            this.Controls.Add(this.hideFormats);
-            this.Controls.Add(this.label4);
+            this.Controls.Add(this.assetsPanel);
             this.Controls.Add(this.panel3);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.label2);
-            this.Controls.Add(this.panel1);
-            this.Controls.Add(this.label1);
             this.Controls.Add(this.panel5);
+            this.Controls.Add(this.ddsPanel);
             this.MinimumSize = new System.Drawing.Size(450, 350);
             this.Name = "MainForm";
             this.Padding = new System.Windows.Forms.Padding(10);
             this.ShowIcon = false;
             this.Text = "DDS Injector";
             this.Shown += new System.EventHandler(this.MainForm_Shown);
-            this.panel1.ResumeLayout(false);
-            this.panel1.PerformLayout();
             this.panel2.ResumeLayout(false);
             this.panel2.PerformLayout();
             this.panel3.ResumeLayout(false);
             this.panel3.PerformLayout();
             this.panel5.ResumeLayout(false);
             this.panel5.PerformLayout();
+            this.ddsPanel.ResumeLayout(false);
+            this.ddsPanel.PerformLayout();
+            this.panel1.ResumeLayout(false);
+            this.panel1.PerformLayout();
+            this.assetsPanel.ResumeLayout(false);
+            this.assetsPanel.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -363,11 +386,6 @@ namespace DDSInjector
         }
 
         #endregion
-
-        private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.Button ddsFileButton;
-        private System.Windows.Forms.Panel panel1;
-        private System.Windows.Forms.TextBox ddsFileTextBox;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.TextBox rootFolderTextBox;
@@ -376,7 +394,6 @@ namespace DDSInjector
         private System.Windows.Forms.TextBox exportFolderTextBox;
         private System.Windows.Forms.Button exportFolderButton;
         private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.Label label4;
         private System.Windows.Forms.FolderBrowserDialog rootFolderBrowser;
         private System.Windows.Forms.FolderBrowserDialog exportFolderBrowser;
         private System.Windows.Forms.OpenFileDialog openFileDialog;
@@ -384,11 +401,18 @@ namespace DDSInjector
         private System.Windows.Forms.Button injectButton;
         private System.Windows.Forms.Panel panel5;
         private System.Windows.Forms.Panel panel7;
+        private System.Windows.Forms.Panel ddsPanel;
+        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.TextBox ddsFileTextBox;
+        private System.Windows.Forms.Button ddsFileButton;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Panel assetsPanel;
         private System.Windows.Forms.DataGridView dataGridView;
         private System.Windows.Forms.DataGridViewTextBoxColumn assetName;
         private System.Windows.Forms.DataGridViewTextBoxColumn assetFormat;
         private System.Windows.Forms.DataGridViewTextBoxColumn assetPath;
         private System.Windows.Forms.CheckBox hideFormats;
+        private System.Windows.Forms.Label label4;
     }
 }
 
