@@ -246,6 +246,7 @@ namespace DDSInjector
             this.ddsFileTextBox.Name = "ddsFileTextBox";
             this.ddsFileTextBox.Size = new System.Drawing.Size(542, 23);
             this.ddsFileTextBox.TabIndex = 1;
+            this.ddsFileTextBox.TextChanged += new System.EventHandler(this.ddsFileTextBox_TextChanged);
             // 
             // ddsFileButton
             // 
@@ -259,6 +260,7 @@ namespace DDSInjector
             this.ddsFileButton.TabIndex = 2;
             this.ddsFileButton.Text = "Select";
             this.ddsFileButton.UseVisualStyleBackColor = true;
+            this.ddsFileButton.Click += new System.EventHandler(this.ddsFileButton_Click);
             // 
             // label1
             // 
@@ -303,6 +305,7 @@ namespace DDSInjector
             this.dataGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.dataGridView.Size = new System.Drawing.Size(594, 211);
             this.dataGridView.TabIndex = 18;
+            this.dataGridView.SelectionChanged += new System.EventHandler(this.dataGridView_SelectionChanged);
             // 
             // assetName
             // 
@@ -337,6 +340,7 @@ namespace DDSInjector
             this.hideFormats.TabIndex = 19;
             this.hideFormats.Text = "Hide incompatible formats";
             this.hideFormats.UseVisualStyleBackColor = true;
+            this.hideFormats.CheckedChanged += new System.EventHandler(this.hideFormats_CheckedChanged);
             // 
             // label4
             // 
