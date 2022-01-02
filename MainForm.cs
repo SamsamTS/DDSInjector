@@ -39,6 +39,12 @@ namespace DDSInjector
             public int dwCaps4;
         }
 
+        private class UexpHeader
+        {
+            public string format = "";
+            public int headerSize = 0;
+        }
+
         private DDSHeader ddsHeader = new();
         private readonly List<string> ddsFiles = null;
 
@@ -127,6 +133,7 @@ namespace DDSInjector
                 try
                 {
                     string[] allfiles = Directory.GetFiles(rootPath, "*.ubulk", SearchOption.AllDirectories);
+                    UexpHeader header = null;
                     foreach (string file in allfiles)
                     {
                         try
@@ -134,8 +141,8 @@ namespace DDSInjector
                             // Making sure the formats matches
                             string uexpFile = Path.ChangeExtension(file, ".uexp");
                             if (!File.Exists(uexpFile)) continue;
-                            string format = GetUexpFormat(uexpFile);
-                            if (string.IsNullOrEmpty(format) || !ddsHeader.format.StartsWith(format)) continue;
+                            header= GetUexpFormat(uexpFile);
+                            if (header is null || string.IsNullOrEmpty(header.format) || !ddsHeader.format.StartsWith(header.format)) continue;
 
                             FileInfo info = new(file);
                             if (info.Length == ubulkSize)
@@ -155,7 +162,7 @@ namespace DDSInjector
                     if (!string.IsNullOrEmpty(selectedAsset))
                     {
                         string target = exportPath + selectedAsset.Remove(0, rootPath.Length);
-                        if(InjectSingleDDS(dds, target, selectedAsset))
+                        if(InjectSingleDDS(dds, target, selectedAsset, header))
                         {
                             count++;
                         }
@@ -178,8 +185,9 @@ namespace DDSInjector
             }
         }
 
-        private bool InjectSingleDDS(string dds, string target, string selectedAsset)
+        private bool InjectSingleDDS(string dds, string target, string selectedAsset, UexpHeader header)
         {
+            if (header is null) return false;
             try
             {
                 BinaryReader reader = new(File.OpenRead(dds));
@@ -188,46 +196,11 @@ namespace DDSInjector
                 string ubulkDst = target + ".ubulk";
 
                 string uexpSrc = selectedAsset + ".uexp";
-                string uexpDst = target + ".uexp";
+                string uexpDst = target + ".uexp";                
 
-                int uexpHeaderSize = 0;
-                string wantedFormat = "";
-                try
+                if (!ddsHeader.format.StartsWith(header.format))
                 {
-                    using BinaryReader r = new(File.OpenRead(uexpSrc));
-
-                    while (r.BaseStream.Position < r.BaseStream.Length)
-                    {
-                        int c = r.ReadByte();
-
-                        if (c == 0x40) //@
-                        {
-                            int o = r.ReadInt32();
-                            if (r.PeekChar() != 'P') continue;
-
-                            uexpHeaderSize = (int)r.BaseStream.Position + o + 44;
-
-                            while (r.PeekChar() != 0)
-                            {
-                                wantedFormat += r.ReadChar();
-                            }
-
-                            wantedFormat = wantedFormat.Remove(0, 3);
-                            break;
-                        }
-                    }
-                }
-                catch { }
-
-                if (uexpHeaderSize == 0)
-                {
-                    statusLabel.Text = "❌Couldn't get uexp header size";
-                    return false;
-                }
-
-                if (!ddsHeader.format.StartsWith(wantedFormat))
-                {
-                    string message = "Wrong DDS Format detected. Wanted " + wantedFormat + " got " + ddsHeader.format + ".\n\nContinue the injection anyway?";
+                    string message = "Wrong DDS Format detected. Wanted " + header.format + " got " + ddsHeader.format + ".\n\nContinue the injection anyway?";
                     DialogResult result = MessageBox.Show(message, "Continue the injection?", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
                     if (result == DialogResult.No)
                     {
@@ -261,7 +234,7 @@ namespace DDSInjector
                 writer = new(File.OpenWrite(uexpDst));
 
                 // Skip uexp header
-                writer.BaseStream.Seek(uexpHeaderSize, 0);
+                writer.BaseStream.Seek(header.headerSize, 0);
 
                 for (int n = ddsHeader.dwMipMapCount - 2; n > 0; n--)
                 {
@@ -344,31 +317,36 @@ namespace DDSInjector
             return true;
         }
 
-        private static string GetUexpFormat(string filename)
+        private static UexpHeader GetUexpFormat(string filename)
         {
             try
             {
+                UexpHeader header = new();
                 using BinaryReader r = new(File.OpenRead(filename));
 
-                string format = "";
                 while (r.BaseStream.Position < r.BaseStream.Length)
                 {
-                    int c = r.ReadByte();
-                    if (c == 0x40) //@
+                    byte c = r.ReadByte();
+                    if (c == '@')
                     {
-                        r.ReadInt32();
-                        if (r.PeekChar() != 'P') continue;
+                        int o = r.ReadInt32();
+                        byte b = r.ReadByte();
+                        if (b != 'P') continue;
 
-                        while (r.PeekChar() != 0)
+                        header.headerSize = (int)r.BaseStream.Position + o + 44;
+
+                        while (b != 0)
                         {
-                            format += r.ReadChar();
+                            header.format += (char)b;
+                            b = r.ReadByte();
                         }
-
-                        return format.Remove(0, 3);
+                        header.format = header.format.Remove(0, 3);
+                        return header;
                     }
                 }
             }
             catch { }
+
             return null;
         }
 
@@ -459,14 +437,14 @@ namespace DDSInjector
                         // Making sure the formats matches
                         string uexpFile = Path.ChangeExtension(file, ".uexp");
                         if (!File.Exists(uexpFile)) continue;
-                        string format = GetUexpFormat(uexpFile);
-                        if (hideFormats.Checked && (string.IsNullOrEmpty(format) || !ddsHeader.format.StartsWith(format))) continue;
+                        UexpHeader header = GetUexpFormat(uexpFile);
+                        if (hideFormats.Checked && (header is null || string.IsNullOrEmpty(header.format) || !ddsHeader.format.StartsWith(header.format))) continue;
 
                         FileInfo info = new(file);
                         if (info.Length == ubulkSize)
                         {
                             string name = Path.GetFileNameWithoutExtension(file);
-                            int i = dataGridView.Rows.Add(name, format, Path.GetDirectoryName(file));
+                            int i = dataGridView.Rows.Add(name, header.format, Path.GetDirectoryName(file), header);
 
                             if (ddsFilename.Contains(name))
                             {
@@ -568,8 +546,8 @@ namespace DDSInjector
                 string rootDir = Path.GetDirectoryName(Settings.Default.rootPath);
                 string selectedAsset = (string)dataGridView.SelectedRows[0].Cells[2].Value + Path.DirectorySeparatorChar + (string)dataGridView.SelectedRows[0].Cells[0].Value;
                 string target = Settings.Default.exportPath + selectedAsset.Remove(0, rootDir.Length);
-
-                InjectSingleDDS(Settings.Default.ddsPath, target, selectedAsset);
+                UexpHeader header = (UexpHeader)dataGridView.SelectedRows[0].Cells[3].Value;
+                InjectSingleDDS(Settings.Default.ddsPath, target, selectedAsset, header);
             }
             else
             {

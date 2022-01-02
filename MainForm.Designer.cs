@@ -54,6 +54,7 @@ namespace DDSInjector
             this.assetName = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.assetFormat = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.assetPath = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.uexpHeader = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.hideFormats = new System.Windows.Forms.CheckBox();
             this.label4 = new System.Windows.Forms.Label();
             this.panel2.SuspendLayout();
@@ -293,7 +294,8 @@ namespace DDSInjector
             this.dataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.assetName,
             this.assetFormat,
-            this.assetPath});
+            this.assetPath,
+            this.uexpHeader});
             this.dataGridView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dataGridView.EditMode = System.Windows.Forms.DataGridViewEditMode.EditProgrammatically;
             this.dataGridView.Location = new System.Drawing.Point(0, 28);
@@ -327,6 +329,13 @@ namespace DDSInjector
             this.assetPath.HeaderText = "Path";
             this.assetPath.Name = "assetPath";
             this.assetPath.ReadOnly = true;
+            // 
+            // uexpHeader
+            // 
+            this.uexpHeader.HeaderText = "Uexp Header";
+            this.uexpHeader.Name = "uexpHeader";
+            this.uexpHeader.ReadOnly = true;
+            this.uexpHeader.Visible = false;
             // 
             // hideFormats
             // 
@@ -412,11 +421,12 @@ namespace DDSInjector
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Panel assetsPanel;
         private System.Windows.Forms.DataGridView dataGridView;
+        private System.Windows.Forms.CheckBox hideFormats;
+        private System.Windows.Forms.Label label4;
         private System.Windows.Forms.DataGridViewTextBoxColumn assetName;
         private System.Windows.Forms.DataGridViewTextBoxColumn assetFormat;
         private System.Windows.Forms.DataGridViewTextBoxColumn assetPath;
-        private System.Windows.Forms.CheckBox hideFormats;
-        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.DataGridViewTextBoxColumn uexpHeader;
     }
 }
 
