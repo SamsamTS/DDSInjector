@@ -1,7 +1,8 @@
 {
   "profiles": {
     "DDSInjector": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "\"C:\\Games\\Final Fantasy VII Remake Intergrade\\End\\Binaries\\Win64\\Exports\\PC0003_02_Body_A.dds\" \"C:\\Games\\Final Fantasy VII Remake Intergrade\\End\\Binaries\\Win64\\Exports\\U_Resident_00linear.dds\""
     }
   }
 }

@@ -347,7 +347,7 @@ namespace DDSInjector
             this.hideFormats.Name = "hideFormats";
             this.hideFormats.Size = new System.Drawing.Size(594, 19);
             this.hideFormats.TabIndex = 19;
-            this.hideFormats.Text = "Hide incompatible formats";
+            this.hideFormats.Text = "Hide incompatible files";
             this.hideFormats.UseVisualStyleBackColor = true;
             this.hideFormats.CheckedChanged += new System.EventHandler(this.hideFormats_CheckedChanged);
             // 

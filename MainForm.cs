@@ -122,66 +122,79 @@ namespace DDSInjector
         private void InjectDDSFiles(List<string> ddsFiles, string rootPath, string exportPath)
         {
             int count = 0;
-            foreach (string dds in ddsFiles)
+            foreach (string ddsPath in ddsFiles)
             {
-                if (!GetDDSHeader(dds)) continue;
+                if (!GetDDSHeader(ddsPath)) continue;
 
                 int ubulkSize = ddsHeader.dwPitchOrLinearSize + ddsHeader.dwPitchOrLinearSize / 4;
-                string ddsFilename = Path.GetFileNameWithoutExtension(dds);
+                string ddsFilename = Path.GetFileNameWithoutExtension(ddsPath);
                 string selectedAsset = "";
 
                 try
                 {
-                    string[] allfiles = Directory.GetFiles(rootPath, "*.ubulk", SearchOption.AllDirectories);
+                    string[] allfiles = Directory.GetFiles(rootPath, "*.uexp", SearchOption.AllDirectories);
                     UexpHeader header = null;
-                    foreach (string file in allfiles)
+                    foreach (string uexpFile in allfiles)
                     {
                         try
                         {
                             // Making sure the formats matches
-                            string uexpFile = Path.ChangeExtension(file, ".uexp");
-                            if (!File.Exists(uexpFile)) continue;
-                            header= GetUexpFormat(uexpFile);
-                            if (header is null || string.IsNullOrEmpty(header.format) || !ddsHeader.format.StartsWith(header.format)) continue;
+                            string ubulkFile = Path.ChangeExtension(uexpFile, ".ubulk");
+                            header = GetUexpFormat(uexpFile);
+                            if (header is null) continue;
+                            if (string.IsNullOrEmpty(header.format) || !ddsHeader.format.StartsWith(header.format)) continue;
 
-                            FileInfo info = new(file);
-                            if (info.Length == ubulkSize)
+                            FileInfo uexpInfo = new(uexpFile);
+                            FileInfo ddsInfo = new(ddsPath);
+                            if (ddsInfo.Length > uexpInfo.Length)
                             {
-                                string name = Path.GetFileNameWithoutExtension(file);
-
-                                // Only add matching name
-                                if (ddsFilename.Contains(name))
+                                if (File.Exists(ubulkFile))
                                 {
-                                    selectedAsset = Path.GetDirectoryName(file) + Path.DirectorySeparatorChar + name;
-                                    break;
+                                    FileInfo info = new(ubulkFile);
+                                    if (info.Length != ubulkSize) continue;
+                                }
+                                else
+                                {
+                                    continue;
                                 }
                             }
+
+                            string name = Path.GetFileNameWithoutExtension(uexpFile);
+
+                            if (ddsFilename.Contains(name))
+                            {
+                                selectedAsset = Path.GetDirectoryName(uexpFile) + Path.DirectorySeparatorChar + name;
+                                break;
+                            }
+
                         }
                         catch { }
                     }
+
                     if (!string.IsNullOrEmpty(selectedAsset))
                     {
-                        string target = exportPath + selectedAsset.Remove(0, rootPath.Length);
-                        if(InjectSingleDDS(dds, target, selectedAsset, header))
+                        string target = exportPath + selectedAsset.Remove(0, Path.GetDirectoryName(rootPath).Length);
+                        if (InjectSingleDDS(ddsPath, target, selectedAsset, header))
                         {
                             count++;
                         }
                     }
-                    if(count == 0)
-                    {
-                        statusLabel.Text = "❌Couldn't inject files";
-                    }
-                    else if(count < ddsFiles.Count)
-                    {
-                        statusLabel.Text = "Injected "+ count + "/"+ ddsFiles.Count + " succesfully";
-                    }
-                    else
-                    {
-                        statusLabel.Text = "✔"+count+" files injected succesfully";
-                    }
 
                 }
                 catch { }
+            }
+
+            if (count == 0)
+            {
+                statusLabel.Text = "❌Couldn't inject files";
+            }
+            else if (count < ddsFiles.Count)
+            {
+                statusLabel.Text = "Injected " + count + "/" + ddsFiles.Count + " succesfully";
+            }
+            else
+            {
+                statusLabel.Text = "✔" + count + " files injected succesfully";
             }
         }
 
@@ -191,12 +204,13 @@ namespace DDSInjector
             try
             {
                 BinaryReader reader = new(File.OpenRead(dds));
+                BinaryWriter writer;
 
                 string ubulkSrc = selectedAsset + ".ubulk";
                 string ubulkDst = target + ".ubulk";
 
                 string uexpSrc = selectedAsset + ".uexp";
-                string uexpDst = target + ".uexp";                
+                string uexpDst = target + ".uexp";
 
                 if (!ddsHeader.format.StartsWith(header.format))
                 {
@@ -213,19 +227,28 @@ namespace DDSInjector
                 // Creating directory tree
                 Directory.CreateDirectory(Path.GetDirectoryName(target));
 
+                // Skip dds header
+                reader.BaseStream.Seek(ddsHeader.headerSize, 0);
+
                 //
                 // Creating .ubulk
                 //
-                File.Copy(ubulkSrc, ubulkDst, true);
-                BinaryWriter writer = new(File.OpenWrite(ubulkDst));
+                if (File.Exists(ubulkSrc))
+                {
+                    File.Copy(ubulkSrc, ubulkDst, true);
+                    writer = new(File.OpenWrite(ubulkDst));
 
-                int bytesToInject = ddsHeader.dwPitchOrLinearSize + ddsHeader.dwPitchOrLinearSize / 4;
+                    // Write 2 biggest textures
+                    writer.Write(reader.ReadBytes(ddsHeader.dwPitchOrLinearSize + ddsHeader.dwPitchOrLinearSize / 4));
+                    writer.Close();
 
-                // Skip dds header
-                reader.BaseStream.Seek(ddsHeader.headerSize, 0);
-                // Write 2 biggest textures
-                writer.Write(reader.ReadBytes(bytesToInject));
-                writer.Close();
+                    if (!FileSizeEqual(ubulkSrc, ubulkDst))
+                    {
+                        File.Delete(ubulkDst);
+                        statusLabel.Text = "❌Injection failed. Injected ubulk file size ended up different.";
+                        return false;
+                    }
+                }
 
                 //
                 // Creating .uexp
@@ -236,17 +259,14 @@ namespace DDSInjector
                 // Skip uexp header
                 writer.BaseStream.Seek(header.headerSize, 0);
 
-                for (int n = ddsHeader.dwMipMapCount - 2; n > 0; n--)
-                {
-                    bytesToInject /= 4;
-                    writer.Write(reader.ReadBytes(bytesToInject));
+                // Draw the rest of the fucking owl
+                writer.Write(reader.ReadBytes((int)reader.BaseStream.Length));
 
-                    if (n == 3)
-                    {
-                        // Inject 4a and 4b
-                        writer.Write(reader.ReadBytes(bytesToInject + bytesToInject));
-                        break;
-                    }
+                if (!FileSizeEqual(uexpSrc, uexpDst))
+                {
+                    File.Delete(uexpDst);
+                    statusLabel.Text = "❌Injection failed. Injected uexp file size ended up different.";
+                    return false;
                 }
 
                 writer.Close();
@@ -299,7 +319,7 @@ namespace DDSInjector
                 /* DDS_HEADER_DXT10
                  * 
                  * DXGI_FORMAT              dxgiFormat; // enum : 4 bytes
-                 * D3D10_RESOURCE_DIMENSION resourceDimension; // enum : 4bytes
+                 * D3D10_RESOURCE_DIMENSION resourceDimension; // enum : 4 bytes
                  * UINT                     miscFlag; // 4
                  * UINT                     arraySize; // 4
                  * UINT                     miscFlags2; //4
@@ -312,8 +332,7 @@ namespace DDSInjector
                 if (ddsHeader.isDX10)
                 {
                     // Size of dwMagic + announced size + DDS_HEADER_DXT10
-                    //ddsHeader.headerSize = 4 + ddsHeader.dwSize + 20;
-                    return false;
+                    ddsHeader.headerSize = 4 + ddsHeader.dwSize + 20;
                 }
                 else
                 {
@@ -327,6 +346,7 @@ namespace DDSInjector
                 ddsHeader.format += (char)(ddsHeader.dwPixelFourCC >> 16 & 0xFF);
                 ddsHeader.format += (char)(ddsHeader.dwPixelFourCC >> 24 & 0xFF);
 
+                reader.Close();
             }
             catch { return false; }
 
@@ -340,30 +360,64 @@ namespace DDSInjector
                 UexpHeader header = new();
                 using BinaryReader r = new(File.OpenRead(filename));
 
+                // Textures start with 0x020d0203
+                int magic = r.ReadInt32();
+                if (magic != 0x020d0203) return null;
+
+                string search = "PF_";
+                int i = 0;
+                int l = search.Length;
+
                 while (r.BaseStream.Position < r.BaseStream.Length)
                 {
+                    // Looking for "PF_"
                     byte c = r.ReadByte();
-                    if (c == '@')
+                    if (c != (byte)search[i]) continue;
+                    if (++i < l) continue;
+
+                    // Rewind to read offset
+                    /*r.BaseStream.Seek(-l - sizeof(int), SeekOrigin.Current);
+                    int o = r.ReadInt32();
+
+                    // Calculate the header size, should be 44 bytes after the start of "PF_" + the offset
+                    header.headerSize = (int)r.BaseStream.Position + o + 44;*/
+
+                    // Reading the format
+                    //r.BaseStream.Seek(l, SeekOrigin.Current);
+                    c = r.ReadByte();
+
+                    while (c != 0)
                     {
-                        int o = r.ReadInt32();
-                        byte b = r.ReadByte();
-                        if (b != 'P') continue;
-
-                        header.headerSize = (int)r.BaseStream.Position + o + 43;
-
-                        while (b != 0)
-                        {
-                            header.format += (char)b;
-                            b = r.ReadByte();
-                        }
-                        header.format = header.format.Remove(0, 3);
-                        return header;
+                        header.format += (char)c;
+                        c = r.ReadByte();
                     }
+
+                    // Making an exception for BC7
+                    if (header.format == "BC7") header.format = "DX10";
+
+                    // Looking for end of header
+                    while (c != '@')
+                    {
+                        c = r.ReadByte();
+                    }
+
+                    header.headerSize = (int)r.BaseStream.Position + 19;
+
+
+                    return header;
                 }
             }
             catch { }
 
             return null;
+        }
+
+        private bool FileSizeEqual(string fileA, string fileB)
+        {
+            FileInfo infoA = new(fileA);
+            FileInfo infoB = new(fileB);
+
+            return infoA.Length == infoB.Length;
         }
 
         private void UpdateStatus()
@@ -406,7 +460,7 @@ namespace DDSInjector
                 statusLabel.Text = "Please select a DDS file to inject";
                 return;
             }
-            if(!File.Exists(Settings.Default.ddsPath))
+            if (!File.Exists(Settings.Default.ddsPath))
             {
                 statusLabel.Text = "DDS file not found. Please select a DDS file to inject";
                 return;
@@ -427,9 +481,9 @@ namespace DDSInjector
                 return;
             }
 
-            if(!GetDDSHeader(Settings.Default.ddsPath))
+            if (!GetDDSHeader(Settings.Default.ddsPath))
             {
-                if(ddsHeader.isDX10)
+                if (ddsHeader.isDX10)
                 {
                     statusLabel.Text = "❌DXT10 DDS format not supported";
                 }
@@ -445,33 +499,50 @@ namespace DDSInjector
 
             try
             {
-                string[] allfiles = Directory.GetFiles(Settings.Default.rootPath, "*.ubulk", SearchOption.AllDirectories);
-                foreach (string file in allfiles)
+                string[] allfiles = Directory.GetFiles(Settings.Default.rootPath, "*.uexp", SearchOption.AllDirectories);
+                foreach (string uexpFile in allfiles)
                 {
                     try
                     {
                         // Making sure the formats matches
-                        string uexpFile = Path.ChangeExtension(file, ".uexp");
-                        if (!File.Exists(uexpFile)) continue;
+                        string ubulkFile = Path.ChangeExtension(uexpFile, ".ubulk");
                         UexpHeader header = GetUexpFormat(uexpFile);
-                        if (hideFormats.Checked && (header is null || string.IsNullOrEmpty(header.format) || !ddsHeader.format.StartsWith(header.format))) continue;
+                        if (header is null) continue;
 
-                        FileInfo info = new(file);
-                        if (info.Length == ubulkSize)
+                        if (hideFormats.Checked)
                         {
-                            string name = Path.GetFileNameWithoutExtension(file);
-                            int i = dataGridView.Rows.Add(name, header.format, Path.GetDirectoryName(file), header);
+                            if (string.IsNullOrEmpty(header.format) || !ddsHeader.format.StartsWith(header.format)) continue;
 
-                            if (ddsFilename.Contains(name))
+                            FileInfo uexpInfo = new(uexpFile);
+                            FileInfo ddsInfo = new(Settings.Default.ddsPath);
+                            if (ddsInfo.Length > uexpInfo.Length)
                             {
-                                dataGridView.Rows[i].Selected = true;
-                                statusLabel.Text = "✔Matching file name found";
+                                if (File.Exists(ubulkFile))
+                                {
+                                    FileInfo info = new(ubulkFile);
+                                    if (info.Length != ubulkSize) continue;
+                                }
+                                else
+                                {
+                                    continue;
+                                }
                             }
                         }
+
+                        string name = Path.GetFileNameWithoutExtension(uexpFile);
+                        int i = dataGridView.Rows.Add(name, header.format, Path.GetDirectoryName(uexpFile), header);
+
+                        if (ddsFilename.Contains(name))
+                        {
+                            dataGridView.Rows[i].Selected = true;
+                            dataGridView.CurrentCell = dataGridView.Rows[i].Cells[0];
+                            statusLabel.Text = "✔Matching file name found";
+                        }
+
                     }
                     catch { }
                 }
-                if(dataGridView.Rows.Count == 0)
+                if (dataGridView.Rows.Count == 0)
                 {
                     statusLabel.Text = "❌Unable to find compatible asset. Make sure the root folder is correct.";
                 }
@@ -486,7 +557,7 @@ namespace DDSInjector
             }
             catch (Exception ex)
             {
-                statusLabel.Text = "❌Error while looking for compatible assets: "+ex.Message;
+                statusLabel.Text = "❌Error while looking for compatible assets: " + ex.Message;
                 return;
             }
         }
