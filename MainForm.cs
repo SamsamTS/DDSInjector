@@ -296,11 +296,29 @@ namespace DDSInjector
                 ddsHeader.dwCaps3 = reader.ReadInt32();
                 ddsHeader.dwCaps4 = reader.ReadInt32();
 
+                /* DDS_HEADER_DXT10
+                 * 
+                 * DXGI_FORMAT              dxgiFormat; // enum : 4 bytes
+                 * D3D10_RESOURCE_DIMENSION resourceDimension; // enum : 4bytes
+                 * UINT                     miscFlag; // 4
+                 * UINT                     arraySize; // 4
+                 * UINT                     miscFlags2; //4
+                 * 
+                 * Total : 20 bytes
+                */
+
                 // If the DDS_PIXELFORMAT dwFlags is set to DDPF_FOURCC (0x4) and dwFourCC is set to "DX10" (0x30315844) an additional DDS_HEADER_DXT10 structure will be present
                 ddsHeader.isDX10 = (ddsHeader.dwPixelFlags == 0x4 && ddsHeader.dwPixelFourCC == 0x30315844);
                 if (ddsHeader.isDX10)
                 {
+                    // Size of dwMagic + announced size + DDS_HEADER_DXT10
+                    //ddsHeader.headerSize = 4 + ddsHeader.dwSize + 20;
                     return false;
+                }
+                else
+                {
+                    // Size of dwMagic + announced size
+                    ddsHeader.headerSize = 4 + ddsHeader.dwSize;
                 }
 
                 ddsHeader.format = "";
@@ -309,8 +327,6 @@ namespace DDSInjector
                 ddsHeader.format += (char)(ddsHeader.dwPixelFourCC >> 16 & 0xFF);
                 ddsHeader.format += (char)(ddsHeader.dwPixelFourCC >> 24 & 0xFF);
 
-                // Size of dwMagic + announced size
-                ddsHeader.headerSize = 4 + ddsHeader.dwSize;
             }
             catch { return false; }
 
@@ -333,7 +349,7 @@ namespace DDSInjector
                         byte b = r.ReadByte();
                         if (b != 'P') continue;
 
-                        header.headerSize = (int)r.BaseStream.Position + o + 44;
+                        header.headerSize = (int)r.BaseStream.Position + o + 43;
 
                         while (b != 0)
                         {
