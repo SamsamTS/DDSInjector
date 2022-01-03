@@ -43,6 +43,7 @@ namespace DDSInjector
         {
             public string format = "";
             public int headerSize = 0;
+            public int dataSize = 0;
         }
 
         private DDSHeader ddsHeader = new();
@@ -153,7 +154,8 @@ namespace DDSInjector
                                     FileInfo info = new(ubulkFile);
                                     if (info.Length != ubulkSize) continue;
                                 }
-                                else
+                                // Only one mip?
+                                else if (ddsHeader.dwPitchOrLinearSize != header.dataSize)
                                 {
                                     continue;
                                 }
@@ -230,26 +232,37 @@ namespace DDSInjector
                 // Skip dds header
                 reader.BaseStream.Seek(ddsHeader.headerSize, 0);
 
-                //
-                // Creating .ubulk
-                //
-                if (File.Exists(ubulkSrc))
+                // If uexp is too small we search for the ubulk
+                FileInfo uexpInfo = new(uexpSrc);
+                FileInfo ddsInfo = new(dds);
+                if (ddsInfo.Length > uexpInfo.Length)
                 {
-                    File.Copy(ubulkSrc, ubulkDst, true);
-                    writer = new(File.OpenWrite(ubulkDst));
-
-                    // Write 2 biggest textures
-                    writer.Write(reader.ReadBytes(ddsHeader.dwPitchOrLinearSize + ddsHeader.dwPitchOrLinearSize / 4));
-                    writer.Close();
-
-                    if (!FileSizeEqual(ubulkSrc, ubulkDst))
+                    //
+                    // Creating .ubulk
+                    //
+                    if (File.Exists(ubulkSrc))
                     {
-                        File.Delete(ubulkDst);
-                        statusLabel.Text = "❌Injection failed. Injected ubulk file size ended up different.";
+                        File.Copy(ubulkSrc, ubulkDst, true);
+                        writer = new(File.OpenWrite(ubulkDst));
+
+                        // Write 2 biggest textures
+                        writer.Write(reader.ReadBytes(ddsHeader.dwPitchOrLinearSize + ddsHeader.dwPitchOrLinearSize / 4));
+                        writer.Close();
+
+                        if (!FileSizeEqual(ubulkSrc, ubulkDst))
+                        {
+                            File.Delete(ubulkDst);
+                            statusLabel.Text = "❌Injection failed. Injected ubulk file size ended up different.";
+                            return false;
+                        }
+                    }
+                    // Only one mip?
+                    else if (ddsHeader.dwPitchOrLinearSize != header.dataSize)
+                    {
+                        statusLabel.Text = "❌Injection failed. Sizes don't match.";
                         return false;
                     }
                 }
-
                 //
                 // Creating .uexp
                 //
@@ -259,8 +272,8 @@ namespace DDSInjector
                 // Skip uexp header
                 writer.BaseStream.Seek(header.headerSize, 0);
 
-                // Draw the rest of the fucking owl
-                writer.Write(reader.ReadBytes((int)reader.BaseStream.Length));
+                // Copy the expected amount of data
+                writer.Write(reader.ReadBytes(header.dataSize));
 
                 if (!FileSizeEqual(uexpSrc, uexpDst))
                 {
@@ -375,15 +388,7 @@ namespace DDSInjector
                     if (c != (byte)search[i]) continue;
                     if (++i < l) continue;
 
-                    // Rewind to read offset
-                    /*r.BaseStream.Seek(-l - sizeof(int), SeekOrigin.Current);
-                    int o = r.ReadInt32();
-
-                    // Calculate the header size, should be 44 bytes after the start of "PF_" + the offset
-                    header.headerSize = (int)r.BaseStream.Position + o + 44;*/
-
                     // Reading the format
-                    //r.BaseStream.Seek(l, SeekOrigin.Current);
                     c = r.ReadByte();
 
                     while (c != 0)
@@ -403,6 +408,9 @@ namespace DDSInjector
 
                     header.headerSize = (int)r.BaseStream.Position + 19;
 
+                    // Read data size
+                    r.BaseStream.Seek(3, SeekOrigin.Current);
+                    header.dataSize = r.ReadInt32();
 
                     return header;
                 }
@@ -522,7 +530,8 @@ namespace DDSInjector
                                     FileInfo info = new(ubulkFile);
                                     if (info.Length != ubulkSize) continue;
                                 }
-                                else
+                                // Only one mip?
+                                else if (ddsHeader.dwPitchOrLinearSize != header.dataSize)
                                 {
                                     continue;
                                 }
