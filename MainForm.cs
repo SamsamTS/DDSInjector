@@ -152,7 +152,7 @@ namespace DDSInjector
                                 if (File.Exists(ubulkFile))
                                 {
                                     FileInfo info = new(ubulkFile);
-                                    if (info.Length != ubulkSize) continue;
+                                    if (info.Length != ubulkSize && info.Length != ddsHeader.dwPitchOrLinearSize) continue;
                                 }
                                 // Only one mip?
                                 else if (ddsHeader.dwPitchOrLinearSize != header.dataSize)
@@ -245,8 +245,14 @@ namespace DDSInjector
                         File.Copy(ubulkSrc, ubulkDst, true);
                         writer = new(File.OpenWrite(ubulkDst));
 
-                        // Write 2 biggest textures
-                        writer.Write(reader.ReadBytes(ddsHeader.dwPitchOrLinearSize + ddsHeader.dwPitchOrLinearSize / 4));
+                        // Write 1 or 2 biggest textures
+                        FileInfo info = new(ubulkSrc);
+                        int bytesToWrite = ddsHeader.dwPitchOrLinearSize;
+                        if(info.Length > ddsHeader.dwPitchOrLinearSize)
+                        {
+                            bytesToWrite += ddsHeader.dwPitchOrLinearSize/4;
+                        }
+                        writer.Write(reader.ReadBytes(bytesToWrite));
                         writer.Close();
 
                         if (!FileSizeEqual(ubulkSrc, ubulkDst))
@@ -359,6 +365,9 @@ namespace DDSInjector
                 ddsHeader.format += (char)(ddsHeader.dwPixelFourCC >> 16 & 0xFF);
                 ddsHeader.format += (char)(ddsHeader.dwPixelFourCC >> 24 & 0xFF);
 
+                if(ddsHeader.format == "ATI1") ddsHeader.format = "BC4";
+                if(ddsHeader.format == "ATI2") ddsHeader.format = "BC5";
+
                 reader.Close();
             }
             catch { return false; }
@@ -373,9 +382,9 @@ namespace DDSInjector
                 UexpHeader header = new();
                 using BinaryReader r = new(File.OpenRead(filename));
 
-                // Textures start with 0x020d0203
+                // Textures start with 0x020d0203 or 0x080a0203
                 int magic = r.ReadInt32();
-                if (magic != 0x020d0203) return null;
+                if (magic != 0x020d0203 && magic != 0x080a0203) return null;
 
                 string search = "PF_";
                 int i = 0;
@@ -528,7 +537,7 @@ namespace DDSInjector
                                 if (File.Exists(ubulkFile))
                                 {
                                     FileInfo info = new(ubulkFile);
-                                    if (info.Length != ubulkSize) continue;
+                                    if (info.Length != ubulkSize && info.Length != ddsHeader.dwPitchOrLinearSize) continue;
                                 }
                                 // Only one mip?
                                 else if (ddsHeader.dwPitchOrLinearSize != header.dataSize)
