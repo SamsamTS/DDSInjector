@@ -79,7 +79,7 @@ namespace DDSInjector
                 {
                     export = arg.Remove(0, 8);
                 }
-                else if (arg.EndsWith(".dds") && File.Exists(arg))
+                else if (arg.ToLower().EndsWith(".dds") && File.Exists(arg))
                 {
                     ddsFiles.Add(arg);
                 }
@@ -303,7 +303,7 @@ namespace DDSInjector
 
         private bool GetDDSHeader(string filename)
         {
-            if (!filename.EndsWith(".dds") && !File.Exists(filename)) return false;
+            if (!filename.ToLower().EndsWith(".dds") && !File.Exists(filename)) return false;
 
             try
             {
@@ -686,7 +686,7 @@ namespace DDSInjector
 
         private void ddsFileTextBox_TextChanged(object sender, EventArgs e)
         {
-            if (Path.GetExtension(ddsFileTextBox.Text) == ".dds")
+            if (Path.GetExtension(ddsFileTextBox.Text).ToLower() == ".dds")
             {
                 Settings.Default.ddsPath = ddsFileTextBox.Text;
                 Settings.Default.Save();
