@@ -382,9 +382,9 @@ namespace DDSInjector
                 UexpHeader header = new();
                 using BinaryReader r = new(File.OpenRead(filename));
 
-                // Textures start with 0x020d0203 or 0x080a0203
+                // Textures start with 0x020d0203, 0x080a0203 or 0x020a0203
                 int magic = r.ReadInt32();
-                if (magic != 0x020d0203 && magic != 0x080a0203) return null;
+                if (magic != 0x020d0203 && magic != 0x080a0203 && magic != 0x020a0203) return null;
 
                 string search = "PF_";
                 int i = 0;
