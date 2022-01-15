@@ -163,7 +163,7 @@ namespace DDSInjector
 
                             string name = Path.GetFileNameWithoutExtension(uexpFile);
 
-                            if (ddsFilename.Contains(name))
+                            if (ddsFilename == name)
                             {
                                 selectedAsset = Path.GetDirectoryName(uexpFile) + Path.DirectorySeparatorChar + name;
                                 break;
