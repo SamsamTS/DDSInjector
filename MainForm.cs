@@ -6,6 +6,7 @@ namespace DDSInjector
 {
     using Properties;
     using System.Collections.Generic;
+    using System.Reflection;
 
     public partial class MainForm : Form
     {
@@ -54,6 +55,9 @@ namespace DDSInjector
             InitializeComponent();
 
             Text = "DDS Injector v" + GetType().Assembly.GetName().Version.ToString(3);
+
+            // Double Buffered Grid View please
+            dataGridView.GetType().GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(dataGridView, true);
 
             openFileDialog.Filter = "DDS File (*.dds)|*.dds";
             ddsFileTextBox.Text = Settings.Default.ddsPath;
@@ -139,6 +143,9 @@ namespace DDSInjector
                     {
                         try
                         {
+                            string name = Path.GetFileNameWithoutExtension(uexpFile);
+                            if (ddsFilename != name) continue;
+
                             // Making sure the formats matches
                             string ubulkFile = Path.ChangeExtension(uexpFile, ".ubulk");
                             header = GetUexpFormat(uexpFile);
@@ -161,14 +168,8 @@ namespace DDSInjector
                                 }
                             }
 
-                            string name = Path.GetFileNameWithoutExtension(uexpFile);
-
-                            if (ddsFilename == name)
-                            {
-                                selectedAsset = Path.GetDirectoryName(uexpFile) + Path.DirectorySeparatorChar + name;
-                                break;
-                            }
-
+                            selectedAsset = Path.GetDirectoryName(uexpFile) + Path.DirectorySeparatorChar + name;
+                            break;
                         }
                         catch { }
                     }
