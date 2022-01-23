@@ -139,6 +139,7 @@ namespace DDSInjector
                 {
                     string[] allfiles = Directory.GetFiles(rootPath, "*.uexp", SearchOption.AllDirectories);
                     UexpHeader header = null;
+                    FileInfo ddsInfo = new(ddsPath);
                     foreach (string uexpFile in allfiles)
                     {
                         try
@@ -153,13 +154,12 @@ namespace DDSInjector
                             if (string.IsNullOrEmpty(header.format) || !ddsHeader.format.StartsWith(header.format)) continue;
 
                             FileInfo uexpInfo = new(uexpFile);
-                            FileInfo ddsInfo = new(ddsPath);
                             if (ddsInfo.Length > uexpInfo.Length)
                             {
                                 if (File.Exists(ubulkFile))
                                 {
                                     FileInfo info = new(ubulkFile);
-                                    if (info.Length != ubulkSize && info.Length != ddsHeader.dwPitchOrLinearSize) continue;
+                                    if (info.Length != ubulkSize && info.Length > ddsInfo.Length && info.Length != ddsHeader.dwPitchOrLinearSize) continue;
                                 }
                                 // Only one mip?
                                 else if (ddsHeader.dwPitchOrLinearSize != header.dataSize)
@@ -246,14 +246,9 @@ namespace DDSInjector
                         File.Copy(ubulkSrc, ubulkDst, true);
                         writer = new(File.OpenWrite(ubulkDst));
 
-                        // Write 1 or 2 biggest textures
+                        // Write the size of the ubulk
                         FileInfo info = new(ubulkSrc);
-                        int bytesToWrite = ddsHeader.dwPitchOrLinearSize;
-                        if(info.Length > ddsHeader.dwPitchOrLinearSize)
-                        {
-                            bytesToWrite += ddsHeader.dwPitchOrLinearSize/4;
-                        }
-                        writer.Write(reader.ReadBytes(bytesToWrite));
+                        writer.Write(reader.ReadBytes((int)info.Length));
                         writer.Close();
 
                         if (!FileSizeEqual(ubulkSrc, ubulkDst))
@@ -512,6 +507,7 @@ namespace DDSInjector
                 return;
             }
 
+            FileInfo ddsInfo = new(Settings.Default.ddsPath);
             int ubulkSize = ddsHeader.dwPitchOrLinearSize + ddsHeader.dwPitchOrLinearSize / 4;
             string ddsFilename = Path.GetFileNameWithoutExtension(Settings.Default.ddsPath);
 
@@ -532,13 +528,12 @@ namespace DDSInjector
                             if (string.IsNullOrEmpty(header.format) || !ddsHeader.format.StartsWith(header.format)) continue;
 
                             FileInfo uexpInfo = new(uexpFile);
-                            FileInfo ddsInfo = new(Settings.Default.ddsPath);
                             if (ddsInfo.Length > uexpInfo.Length)
                             {
                                 if (File.Exists(ubulkFile))
                                 {
                                     FileInfo info = new(ubulkFile);
-                                    if (info.Length != ubulkSize && info.Length != ddsHeader.dwPitchOrLinearSize) continue;
+                                    if (info.Length != ubulkSize && info.Length > ddsInfo.Length && info.Length != ddsHeader.dwPitchOrLinearSize) continue;
                                 }
                                 // Only one mip?
                                 else if (ddsHeader.dwPitchOrLinearSize != header.dataSize)
