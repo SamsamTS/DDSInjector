@@ -45,10 +45,15 @@ namespace DDSInjector
             public string format = "";
             public int headerSize = 0;
             public int dataSize = 0;
+            public int width = 0;
+            public int height = 0;
         }
 
         private DDSHeader ddsHeader = new();
         private readonly List<string> ddsFiles = null;
+
+        [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+        static extern bool AttachConsole(int dwProcessId);
 
         public MainForm()
         {
@@ -75,6 +80,12 @@ namespace DDSInjector
 
             foreach (string arg in args)
             {
+                if(arg.StartsWith("-h"))
+                {
+                    AttachConsole(-1);
+                    Console.WriteLine("\nCommand line usage : DDSInjector.exe -root=\"Path\\To\\Root\" -export=\"Path\\To\\Export\" \"File1.dds\" \"File2.dds\" ...\n");
+                    System.Environment.Exit(0);
+                }
                 if (arg.StartsWith("-root="))
                 {
                     root = arg.Remove(0, 6);
@@ -115,9 +126,11 @@ namespace DDSInjector
                 return;
             }
 
+            AttachConsole(-1);
             // All necessary arguments given : inject and exit
             if (!Directory.Exists(root))
             {
+                Console.WriteLine("Root folder not found.");
                 System.Environment.Exit(1);
             }
             InjectDDSFiles(ddsFiles, root, export);
@@ -148,24 +161,12 @@ namespace DDSInjector
                             if (ddsFilename != name) continue;
 
                             // Making sure the formats matches
-                            string ubulkFile = Path.ChangeExtension(uexpFile, ".ubulk");
                             header = GetUexpFormat(uexpFile);
                             if (header is null) continue;
-                            if (string.IsNullOrEmpty(header.format) || !ddsHeader.format.StartsWith(header.format)) continue;
-
-                            FileInfo uexpInfo = new(uexpFile);
-                            if (ddsInfo.Length > uexpInfo.Length)
+                            if (string.IsNullOrEmpty(header.format) || !ddsHeader.format.StartsWith(header.format))
                             {
-                                if (File.Exists(ubulkFile))
-                                {
-                                    FileInfo info = new(ubulkFile);
-                                    if (info.Length != ubulkSize && info.Length > ddsInfo.Length && info.Length != ddsHeader.dwPitchOrLinearSize) continue;
-                                }
-                                // Only one mip?
-                                else if (ddsHeader.dwPitchOrLinearSize != header.dataSize)
-                                {
-                                    continue;
-                                }
+                                Console.WriteLine(Path.GetFileNameWithoutExtension(ddsPath) + ": Wrong DDS Format detected. Wanted " + header.format + " got " + ddsHeader.format);
+                                continue;
                             }
 
                             selectedAsset = Path.GetDirectoryName(uexpFile) + Path.DirectorySeparatorChar + name;
@@ -179,10 +180,18 @@ namespace DDSInjector
                         string target = exportPath + selectedAsset.Remove(0, Path.GetDirectoryName(rootPath).Length);
                         if (InjectSingleDDS(ddsPath, target, selectedAsset, header))
                         {
+                            Console.WriteLine(Path.GetFileNameWithoutExtension(ddsPath) + " injected sucessfully.");
                             count++;
                         }
+                        else
+                        {
+                            Console.WriteLine(Path.GetFileNameWithoutExtension(ddsPath) + ": " + statusLabel.Text);
+                        }
                     }
-
+                    else
+                    {
+                        Console.WriteLine(Path.GetFileNameWithoutExtension(ddsPath) + ": couldn't find matching uexp.");
+                    }
                 }
                 catch { }
             }
@@ -194,6 +203,7 @@ namespace DDSInjector
             else if (count < ddsFiles.Count)
             {
                 statusLabel.Text = "Injected " + count + "/" + ddsFiles.Count + " succesfully";
+                if (count > 1) Console.WriteLine(statusLabel.Text);
             }
             else
             {
@@ -227,44 +237,40 @@ namespace DDSInjector
                     }
                 }
 
+                if (ddsHeader.dwWidth != header.width || ddsHeader.dwHeight != header.height)
+                {
+                    statusLabel.Text = "❌Image dimensions different. Wanted : " + header.width + "x" + header.height + " got " + ddsHeader.dwWidth + "x" + ddsHeader.dwHeight + ".";
+                    injectButton.Enabled = true;
+                    return false;
+                }
+
                 // Creating directory tree
                 Directory.CreateDirectory(Path.GetDirectoryName(target));
 
                 // Skip dds header
                 reader.BaseStream.Seek(ddsHeader.headerSize, 0);
 
-                // If uexp is too small we search for the ubulk
-                FileInfo uexpInfo = new(uexpSrc);
-                FileInfo ddsInfo = new(dds);
-                if (ddsInfo.Length > uexpInfo.Length)
+                //
+                // Creating .ubulk
+                //
+                if (File.Exists(ubulkSrc))
                 {
-                    //
-                    // Creating .ubulk
-                    //
-                    if (File.Exists(ubulkSrc))
-                    {
-                        File.Copy(ubulkSrc, ubulkDst, true);
-                        writer = new(File.OpenWrite(ubulkDst));
+                    File.Copy(ubulkSrc, ubulkDst, true);
+                    writer = new(File.OpenWrite(ubulkDst));
 
-                        // Write the size of the ubulk
-                        FileInfo info = new(ubulkSrc);
-                        writer.Write(reader.ReadBytes((int)info.Length));
-                        writer.Close();
+                    // Write the size of the ubulk
+                    FileInfo info = new(ubulkSrc);
+                    writer.Write(reader.ReadBytes((int)info.Length));
+                    writer.Close();
 
-                        if (!FileSizeEqual(ubulkSrc, ubulkDst))
-                        {
-                            File.Delete(ubulkDst);
-                            statusLabel.Text = "❌Injection failed. Injected ubulk file size ended up different.";
-                            return false;
-                        }
-                    }
-                    // Only one mip?
-                    else if (ddsHeader.dwPitchOrLinearSize != header.dataSize)
+                    if (!FileSizeEqual(ubulkSrc, ubulkDst))
                     {
-                        statusLabel.Text = "❌Injection failed. Sizes don't match.";
+                        File.Delete(ubulkDst);
+                        statusLabel.Text = "❌Injection failed. Injected ubulk file size ended up different.";
                         return false;
                     }
                 }
+
                 //
                 // Creating .uexp
                 //
@@ -386,12 +392,20 @@ namespace DDSInjector
                 int i = 0;
                 int l = search.Length;
 
-                while (r.BaseStream.Position < r.BaseStream.Length)
+                // Only check the start of the file
+                while (r.BaseStream.Position < 300)
                 {
                     // Looking for "PF_"
                     byte c = r.ReadByte();
-                    if (c != (byte)search[i]) continue;
+                    if (c != (byte)search[i])
+                    {
+                        i = 0;
+                        continue;
+                    }
                     if (++i < l) continue;
+
+                    // Saving position of start of PF_
+                    long p = r.BaseStream.Position - 3;
 
                     // Reading the format
                     c = r.ReadByte();
@@ -416,6 +430,11 @@ namespace DDSInjector
                     // Read data size
                     r.BaseStream.Seek(3, SeekOrigin.Current);
                     header.dataSize = r.ReadInt32();
+
+                    // Read image size
+                    r.BaseStream.Seek(p - 16, SeekOrigin.Begin);
+                    header.width = r.ReadInt32();
+                    header.height = r.ReadInt32();
 
                     return header;
                 }
@@ -527,20 +546,7 @@ namespace DDSInjector
                         {
                             if (string.IsNullOrEmpty(header.format) || !ddsHeader.format.StartsWith(header.format)) continue;
 
-                            FileInfo uexpInfo = new(uexpFile);
-                            if (ddsInfo.Length > uexpInfo.Length)
-                            {
-                                if (File.Exists(ubulkFile))
-                                {
-                                    FileInfo info = new(ubulkFile);
-                                    if (info.Length != ubulkSize && info.Length > ddsInfo.Length && info.Length != ddsHeader.dwPitchOrLinearSize) continue;
-                                }
-                                // Only one mip?
-                                else if (ddsHeader.dwPitchOrLinearSize != header.dataSize)
-                                {
-                                    continue;
-                                }
-                            }
+                            if (ddsHeader.dwWidth != header.width || ddsHeader.dwHeight != header.height) continue;
                         }
 
                         string name = Path.GetFileNameWithoutExtension(uexpFile);
